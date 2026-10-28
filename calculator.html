@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Price Calculator</title>
+<style>body{margin:0;background:#090909;color:#aaa;font:14px system-ui,sans-serif;padding:24px}</style>
+</head>
+<body>
+Loading…
+<script>
+(async function(){
+  const CALC_URL = 'price-calculator.html';
+  const PRESETS_URL = 'price-calculator-settings-presets_final-NOV_2026.json';
+  const loader = `
+;(async function loadReleasedPresets(){
+  try{
+    const r = await fetch(${JSON.stringify(PRESETS_URL)} + '?v=' + Date.now(), {cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const payload = await r.json();
+    const presets = Array.isArray(payload) ? payload : payload.presets;
+    if(!Array.isArray(presets)) throw new Error('Presets not found in JSON');
+    localStorage.setItem(presetKey, JSON.stringify(presets));
+    if(payload.fleetAssignments){
+      fleetAssignments = payload.fleetAssignments;
+      localStorage.setItem(fleetAssignmentKey, JSON.stringify(fleetAssignments));
+    }
+    refreshPresets();
+    renderSavedPresetTable();
+    renderFleetList();
+    if(presets[0]) applyPreset(presets[0]);
+  }catch(err){
+    console.warn('Could not load presets:', err.message);
+  }
+})();
+`;
+  try{
+    const res = await fetch(CALC_URL + '?v=' + Date.now(), {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    let html = await res.text();
+    const closeTag = '<' + '/script>';
+    const pos = html.lastIndexOf(closeTag);
+    if(pos < 0) throw new Error('Script tag not found');
+    html = html.slice(0, pos) + loader + html.slice(pos);
+    document.open();
+    document.write(html);
+    document.close();
+  }catch(err){
+    document.body.textContent = 'Could not load calculator: ' + err.message;
+  }
+})();
+</script>
+</body>
+</html>
